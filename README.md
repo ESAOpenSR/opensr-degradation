@@ -2,8 +2,6 @@
 
 <div align="center">
 
-A set of methods to emulate Sentinel-2 based on High-Resolution imagery
-
 </div>
 
 ## Install
