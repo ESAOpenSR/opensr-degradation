@@ -1,0 +1,22 @@
+# This file contains values from Cookiecutter
+# Made with https://gitlab.com/manoelpqueiroz/galactipy
+
+default_context:
+  project_name: "opensr-degradation"
+  repo_name: "opensr-degradation"
+  package_name: "opensr_degradation"
+  project_description: "A set of method to make NAIP look like Sentinel-2"
+  version: "0.1.0"
+  author: "Cesar Aybar"
+  scm_platform: "GitHub"
+  scm_username: "csaybar"
+  email: "cesar.aybar@uv.es"
+  licence: "MIT"
+  minimal_python_version: 3.8
+  use_formatters: True
+  line_length: 88
+  use_linters: True
+  docstring_style: "google"
+  create_cli: False
+  create_docker: False
+  create_docs: False
