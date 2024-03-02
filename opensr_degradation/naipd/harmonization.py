@@ -126,15 +126,18 @@ def harmonization_02(
 def harmonization_03(
     image: torch.Tensor,
     device: Union[str, torch.device] = "cpu",
+    unet_reflectance_model: Optional[torch.jit.ScriptModule] = None,
     **kwargs
 ) -> torch.Tensor:
 
-    # Load the model
-    file = pkg_resources.resource_filename(
-        "opensr_degradation", "naipd/models/model_unet.pt"
-    )
-    reflectance_model = torch.jit.load(file, map_location=device)
-    reflectance_model.eval()
+    if unet_reflectance_model is None:
+        file = pkg_resources.resource_filename(
+            "opensr_degradation", "naipd/models/model_unet.pt"
+        )
+        reflectance_model = torch.jit.load(file, map_location=device)
+        reflectance_model.eval()
+    else:
+        reflectance_model = unet_reflectance_model
 
     # Pad the image to make it divisible by 32
     to_pad = 32 - (image.shape[-1] % 32)
@@ -152,17 +155,21 @@ def harmonization_03(
 def harmonization_04(
     image: torch.Tensor,
     device: Union[str, torch.device] = "cpu",
+    vae_reflectance_model: Optional[torch.nn.Module] = None,
     **kwargs
 ) -> torch.Tensor:
 
     # Set the model
-    file = pkg_resources.resource_filename(
-        "opensr_degradation", "naipd/models/model_vae.pt"
-    )
-    reflectance_model = SimpleVAE()
-    reflectance_model.load_state_dict(torch.load(file))
-    reflectance_model.eval()
-    reflectance_model.to(device)
+    if vae_reflectance_model is None:
+        file = pkg_resources.resource_filename(
+            "opensr_degradation", "naipd/models/model_vae.pt"
+        )
+        reflectance_model = SimpleVAE()
+        reflectance_model.load_state_dict(torch.load(file))
+        reflectance_model.eval()
+        reflectance_model.to(device)
+    else:
+        reflectance_model = vae_reflectance_model
 
     # Set the image to the right device
     image = image.to(device)
@@ -211,10 +218,9 @@ def harmonization(image: torch.Tensor, params: dict) -> torch.Tensor:
     
     # Set the parameters
     params = params.copy()
-    methods = params.pop("method", ["gamma_multivariate_normal"])
-    device = params.pop("device", "cpu")
-    seed = params.pop("seed", 42)
-
+    methods = params.pop("reflectance_method", "gamma_multivariate_normal")
+    
+    # Check if the percentiles are a list
     percentiles = params.pop("percentiles", [50])
     if not isinstance(percentiles, list):
         percentiles = [percentiles]
@@ -222,7 +228,8 @@ def harmonization(image: torch.Tensor, params: dict) -> torch.Tensor:
     container = {}
 
     if "identity" in methods:
-        container["identity"] = image[None, ...]
+        device = params.get("device", "cpu")
+        container["identity"] = image[None, ...].to(device)
 
     if "gamma_lognormal" in methods:
         con_perc = []
@@ -231,8 +238,7 @@ def harmonization(image: torch.Tensor, params: dict) -> torch.Tensor:
                 harmonization_01(
                     image=image,
                     percentiles=perc,
-                    seed=seed,
-                    device=device
+                    **params
                 )
             )
         container["gamma_lognormal"] = torch.stack(con_perc)
@@ -244,20 +250,19 @@ def harmonization(image: torch.Tensor, params: dict) -> torch.Tensor:
                 harmonization_02(
                     image=image, 
                     percentiles=perc,
-                    seed=seed,
-                    device=device
+                    **params
                 )
             )
         container["gamma_multivariate_normal"] = torch.stack(con_perc)        
 
     if "unet_histogram_matching" in methods:
         container["unet_histogram_matching"] = harmonization_03(
-            image=image, device=device
+            image=image, **params
         )[None, ...]
     
     if "vae_histogram_matching" in methods:
         container["vae_histogram_matching"] = harmonization_04(
-            image=image, device=device
+            image=image, **params
         )[None, ...]
     
     if len(container) == 0:

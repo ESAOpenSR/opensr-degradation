@@ -11,11 +11,7 @@ BLUR_MODEL = [
 ]
 
 
-def blur(
-    image: torch.Tensor,
-    device: Union[str, torch.device] = "cpu",
-    **kwargs
-) -> torch.Tensor:
+def blur(image: torch.Tensor, params: dict) -> torch.Tensor:
     """Apply a Blur kernel to an image tensor.
 
     Args:
@@ -31,4 +27,4 @@ def blur(
 
     return torch.nn.functional.interpolate(
         torch.cat(container)[None], scale_factor=1 / 4, mode="bilinear", antialias=False
-    ).squeeze().to(device)
+    ).squeeze()

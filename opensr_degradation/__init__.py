@@ -2,6 +2,7 @@
 
 from importlib import metadata
 from opensr_degradation.main import pipe
+from opensr_degradation.naipd.main import NAIPd, naip_vae_model, naip_unet_model
 
 def _get_version() -> str:
     try:
