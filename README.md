@@ -27,11 +27,11 @@
 
 ---
 
-**GitHub**: [https://github.com/ESAOpenSR/opensr-test](https://github.com/ESAOpenSR/opensr-degradation)
+**GitHub**: [https://github.com/ESAOpenSR/opensr-degradation](https://github.com/ESAOpenSR/opensr-degradation)
 
-**Documentation**: [https://esaopensr.github.io/opensr-test](https://esaopensr.github.io/opensr-degradation)
+**Documentation**: [https://esaopensr.github.io/opensr-degradation](https://esaopensr.github.io/opensr-degradation)
 
-**PyPI**: [https://pypi.org/project/opensr-test/](https://pypi.org/project/opensr-degradation/)
+**PyPI**: [https://pypi.org/project/opensr-degradation/](https://pypi.org/project/opensr-degradation/)
 
 **Paper**: Coming soon!
 
