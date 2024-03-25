@@ -1,2 +1,10 @@
 
 demo.py
+
+dist/
+
+opensr_degradation/__pycache__/
+
+opensr_degradation/naipd/__pycache__/
+
+demo3.py

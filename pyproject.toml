@@ -7,7 +7,7 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.poetry]
 name = "opensr-degradation"
-version = "0.9.5"
+version = "1.0.1"
 description = "A set of methods to emulate Sentinel-2 based on High-Resolution imagery"
 readme = "README.md"
 authors = ["Cesar Aybar <cesar.aybar@uv.es>"]

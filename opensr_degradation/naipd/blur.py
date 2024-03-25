@@ -4,10 +4,10 @@ import torch
 import torchvision
 
 BLUR_MODEL = [
-    torchvision.transforms.GaussianBlur(13, sigma=3.1),
-    torchvision.transforms.GaussianBlur(13, sigma=3.1),
-    torchvision.transforms.GaussianBlur(13, sigma=3.1),
-    torchvision.transforms.GaussianBlur(13, sigma=3.1),
+    torchvision.transforms.GaussianBlur(13, sigma=3.0),
+    torchvision.transforms.GaussianBlur(13, sigma=2.9),
+    torchvision.transforms.GaussianBlur(13, sigma=2.9),
+    torchvision.transforms.GaussianBlur(13, sigma=3.4),
 ]
 
 

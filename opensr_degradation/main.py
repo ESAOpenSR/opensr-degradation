@@ -1,14 +1,94 @@
 import torch
 import einops
+import datasets
 import numpy as np
 import pandas as pd
 
 from opensr_degradation.naipd.main import NAIPd
 from opensr_degradation.datamodel import Sensor
 from opensr_degradation.utils import hq_histogram_matching
+from opensr_degradation.naipd.blur import BLUR_MODEL
 
 from typing import Any, Dict, Optional
 from tqdm import tqdm
+
+def get_s2like(
+    image: torch.Tensor,
+    table: dict,
+    model: Optional[str] = "vae_histogram_matching"
+) -> torch.Tensor:
+    hr_hat = predict_table(image, table, model)
+
+    # blur the hr_hat
+    hr_hat_blur = []
+    for i in range(hr_hat.shape[0]):
+        blurred = BLUR_MODEL[i](hr_hat[i][None])
+        hr_hat_blur.append(
+            torch.nn.functional.interpolate(
+                blurred[None], scale_factor=1/4, mode="bilinear", antialias=False
+            ).squeeze()
+        )
+    hr_hat_blur = torch.stack(hr_hat_blur)
+    
+    return hr_hat_blur, hr_hat
+
+
+def predict_table(
+    image:torch.Tensor,
+    table:dict,
+    model: Optional[str] = "vae_histogram_matching"
+) -> torch.Tensor:
+    """Predict the image given a table of histograms
+
+    Args:
+        image (torch.Tensor): The image to be predicted.
+        table (dict): The table of histograms.
+        model (Optional[str], optional): The model to be used. Defaults 
+            to "vae_histogram_matching".
+
+    Returns:
+        torch.Tensor: The predicted image.
+    """
+    
+    image = image.clamp(0, 1)
+    image.max()
+    # select "model" columns
+    channel, height, width = image.shape
+    
+    # from dict to dataframe
+    table = pd.DataFrame(table)
+    histograms = table.filter(regex=model).to_numpy()[0:-1].T
+
+    # bug add negative values
+    max_pixels = height * width
+    missing_values = 1210000 - histograms.sum(axis=1)
+    fix_hist = np.zeros_like(histograms)
+    fix_hist[:, 0] = missing_values[:, None].T
+    fixed_histograms = histograms + fix_hist
+    
+    index_name = table["bins"].to_numpy()
+
+    # get the center of the bins
+    center_bins = (index_name[1:] + index_name[0:-1]) / 2
+
+    # repeat the center_bins given the histogram size
+    corrected_image = []
+    for i in range(4):
+        center_bins_repeated = np.array([])
+        for index, bin in enumerate(fixed_histograms[i]):        
+            center_bins_repeated = np.append(
+                center_bins_repeated,
+                np.repeat(center_bins[index], bin)
+            )            
+        corrected_image.append(center_bins_repeated[None])
+    corrected_image = np.stack(corrected_image)
+    
+    image_hat = hq_histogram_matching(
+        image,
+        torch.from_numpy(corrected_image)
+    )
+
+    return image_hat
 
 class pipe:
     def __init__(
@@ -101,7 +181,7 @@ class pipe:
         return lr_image_padded_r_grid_npad, hr_image_padded_r_grid_npad
 
     def full_table(self, hr: torch.Tensor) -> pd.DataFrame:        
-        bins = np.linspace(0, 1., 120)
+        bins = np.linspace(0, 1., 1001)
         reflectance_names = [
             "identity",
             "gamma_lognormal_10",
@@ -124,4 +204,5 @@ class pipe:
             for j in range(c):
                 hr_np, _ = np.histogram(hr[i, j].flatten(), bins=bins)
                 dataset[f"lr__{bands[j]}__{reflectance_names[i]}"] = np.append(hr_np, -999)
-        return dataset
+        return dataset    
+
