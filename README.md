@@ -159,38 +159,28 @@ synthetic_path = DEMO_PATH + "synthetic/ROI_0001/"
 hr_early_data = rioxarray.open_rasterio(synthetic_path + "early/01__m_4506807_nw_19_1_20110818.tif")
 hr_early_torch = torch.from_numpy(hr_early_data.to_numpy()) / 255
 hr_early_metadata = load_metadata(synthetic_path + "late/metadata.json")
-hr_early_torch_hat = opensr_degradation.main.predict_table(
-    hr_early_torch, hr_early_metadata["sim_histograms"], "gamma_multivariate_normal_50"
+lr_hat, hr_hat = opensr_degradation.main.get_s2like(
+    image=hr_early_torch,
+    table=hr_early_metadata["sim_histograms"],
+    model="gamma_multivariate_normal_50"
 )
 
-hr_late_data = rioxarray.open_rasterio(synthetic_path + "late/02__m_4506807_nw_19_060_20210920.tif")
-hr_late_torch = torch.from_numpy(hr_late_data.to_numpy()) / 255
-hr_late_metadata = load_metadata(synthetic_path + "late/metadata.json")
-hr_late_torch_hat = opensr_degradation.main.predict_table(
-    hr_late_torch, hr_late_metadata["sim_histograms"], "gamma_multivariate_normal_50"
-)
 
 import matplotlib.pyplot as plt
-fig, ax = plt.subplots(2, 2, figsize=(10, 5))
-ax = ax.flatten()
+fig, ax = plt.subplots(1, 3, figsize=(10, 5))
 ax[0].imshow(hr_early_torch[[3, 1, 2]].permute(1, 2, 0))
-ax[0].set_title("Original")
-ax[1].imshow(hr_early_torch_hat[[3, 1, 2]].permute(1, 2, 0)*3)
-ax[1].set_title("Degraded")
-ax[2].imshow(hr_late_torch[[3, 1, 2]].permute(1, 2, 0))
-ax[2].set_title("Original")
-ax[3].imshow(hr_late_torch_hat[[3, 1, 2]].permute(1, 2, 0)*3)
-ax[3].set_title("Degraded")
-# remove axis and space
-for a in ax:
-    a.axis("off")
-plt.tight_layout()
+ax[0].set_title("NAIP")
+ax[1].imshow(hr_hat[[3, 1, 2]].permute(1, 2, 0)*3)
+ax[1].set_title("NAIPhat")
+ax[2].imshow(lr_hat[[3, 1, 2]].permute(1, 2, 0)*3)
+ax[2].set_title("S2like")
 plt.show()
 ```
 
 <p align="center">
-  <img src=https://huggingface.co/datasets/isp-uv-es/SEN2NAIP/resolve/main/demo/image_demo.png width=50%>
+  <img src=https://github.com/ESAOpenSR/opensr-degradation/assets/16768318/c88fa16e-bbe7-4072-b518-5ab3b7278893 width=100%>
 </p>
+
 
 ### Extend SEN2NAIP
 
