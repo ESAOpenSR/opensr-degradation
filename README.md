@@ -61,10 +61,12 @@ to obtain the Sentinel-2 histogram prediction. Fourth, correct the initial NAIP 
 
 ## How to use
 
-The example below shows how to use `opensr-degradation` to convert a $NAIP$ to $NAIP_{\hat{h}}$ and $S2_{like}$.
-
+The example below shows how to use `opensr-degradation` to convert a $NAIP$ to $NAIP_{\hat{h}}$ and $S2_{like}$. Using 
+[cubo](https://github.com/ESDS-Leipzig/cubo), we can run `opensr-degradation` anywhere!
 
 ```python
+import ee
+import cubo
 import torch
 import einops
 import pathlib
@@ -72,6 +74,20 @@ import rioxarray
 import numpy as np
 import pandas as pd
 import opensr_degradation
+
+ee.Initialize() 
+
+demo = cubo.create(
+    lat=40.5389819819361, # Central latitude of the cube
+    lon=-111.9839859008789, # Central longitude of the cube
+    collection="USDA/NAIP/DOQQ", # Name of the STAC collection
+    bands=["R", "G", "B", "N"], # Bands to include in the cube
+    start_date="2010-01-01", # Start date of the cube
+    end_date="2018-01-01", # End date of the cube
+    edge_size=256, # Edge size of the cube (px)
+    resolution=2.5, # Pixel size of the cube (m)
+    gee=True
+)[0].to_numpy() / 255
 
 degradation_model = opensr_degradation.pipe(
     sensor="naip_d",
@@ -87,7 +103,7 @@ degradation_model = opensr_degradation.pipe(
         "noise_method": "gaussian_noise",
         "device": "cuda",
         "seed": 42,
-        "percentiles": [10, 25, 50, 75, 90],
+        "percentiles": [50],
         "vae_reflectance_model": opensr_degradation.naip_vae_model("cuda"),
         "unet_reflectance_model": opensr_degradation.naip_unet_model("cuda"),
     },
@@ -97,10 +113,10 @@ degradation_model = opensr_degradation.pipe(
 naip_image = rioxarray.open_rasterio(
     "https://huggingface.co/datasets/isp-uv-es/SEN2NAIP/resolve/main/demo/cross-sensor/ROI_0000/hr.tif"
 )
-
+demo
 # Run the model
-image = torch.from_numpy(naip_image.to_numpy()) / 255
-lr, hr = degradation_model.forward(image)
+lr, hr = degradation_model.forward(torch.from_numpy(demo).float())
+
 ```
 
 ## Installation
@@ -123,9 +139,6 @@ Install the latest dev version from GitHub by running:
 pip install git+https://github.com/ESAOpenSR/opensr-degradation
 ```
 
-## Reproducible examples
-
-Just copy and paste!
 
 ### SEN2NAIP
 
@@ -180,12 +193,3 @@ plt.show()
 <p align="center">
   <img src=https://github.com/ESAOpenSR/opensr-degradation/assets/16768318/c88fa16e-bbe7-4072-b518-5ab3b7278893 width=100%>
 </p>
-
-
-### Extend SEN2NAIP
-
-Using [cubo](https://github.com/ESDS-Leipzig/cubo), SEN2NAIP can be easily extended.
-
-```
-
-```
